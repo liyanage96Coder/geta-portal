@@ -1,6 +1,6 @@
 import { useState } from "react";
 import Sidebar from "../../components/Sidebar/Sidebar";
-
+import Logo from "../../components/Logo/Logo";
 import {
   ShoppingBag,
   Banknote,
