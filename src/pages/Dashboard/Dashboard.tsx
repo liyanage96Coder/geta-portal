@@ -6,14 +6,13 @@ import {
   Banknote,
   Utensils,
   CalendarCheck,
-  CalendarDays,
+  type LucideIcon,
 } from "lucide-react";
+import * as S from "./Styles";
 
 /* ------------------------------------------------------------------ */
 /* Data (replace with API calls later)                                 */
 /* ------------------------------------------------------------------ */
-
-
 
 const stats = [
   {
@@ -46,7 +45,12 @@ const stats = [
   },
 ];
 
-const orders = [
+const orders: {
+  id: string;
+  items: string;
+  time: string;
+  status: S.OrderStatus;
+}[] = [
   {
     id: "GETA-8812",
     items: "Chicken Kottu (L) x2, Ginger Beer x3",
@@ -67,38 +71,36 @@ const orders = [
   },
 ];
 
-// Full class names only: Tailwind can't detect classes built from fragments.
-const statusStyles = {
-  new: { label: "NEW", className: "bg-red-100 text-red-600" },
-  preparing: { label: "PREPARING", className: "bg-amber-100 text-amber-700" },
-  ready: {
-    label: "READY FOR PICKUP",
-    className: "bg-emerald-100 text-emerald-700",
-  },
+// Colors for each status live in Dashboard.styles.ts (StatusBadge).
+const statusLabels: Record<S.OrderStatus, string> = {
+  new: "NEW",
+  preparing: "PREPARING",
+  ready: "READY FOR PICKUP",
 };
 
 // Swap `emoji` for an `image` URL and render an <img> when you have real photos.
+// `bg` is a plain color value now (amber-100, orange-100, rose-100).
 const topItems = [
   {
     name: "Cheese Kottu (Regular)",
     sold: 142,
     revenue: "LKR 213,000",
     emoji: "🍛",
-    bg: "bg-amber-100",
+    bg: "#fef3c7",
   },
   {
     name: "Pol Roti & Lunu Miris Meal",
     sold: 98,
     revenue: "LKR 78,400",
     emoji: "🫓",
-    bg: "bg-orange-100",
+    bg: "#ffedd5",
   },
   {
     name: "Fish Ambul Thiyal Curry",
     sold: 76,
     revenue: "LKR 152,000",
     emoji: "🍲",
-    bg: "bg-rose-100",
+    bg: "#ffe4e6",
   },
 ];
 
@@ -108,8 +110,13 @@ const activity = [
   { text: "Payout of LKR 145,000 processed", time: "Yesterday" },
 ];
 
+type Range = "Day" | "Week" | "Month";
+
 // value = bar height in %, highlight = the bar to emphasise
-const salesData = {
+const salesData: Record<
+  Range,
+  { label: string; value: number; highlight?: boolean }[]
+> = {
   Day: [
     { label: "9am", value: 20 },
     { label: "11am", value: 45 },
@@ -136,36 +143,34 @@ const salesData = {
   ],
 };
 
+const ranges = Object.keys(salesData) as Range[];
+
 /* ------------------------------------------------------------------ */
 /* Small building blocks                                               */
 /* ------------------------------------------------------------------ */
 
-function Card({ className = "", children }) {
-  return (
-    <section
-      className={`rounded-xl border border-slate-200 bg-white p-5 ${className}`}
-    >
-      {children}
-    </section>
-  );
+interface StatCardProps {
+  label: string;
+  value: string;
+  icon: LucideIcon;
+  delta: string;
+  note: string;
 }
 
-function StatCard({ label, value, icon: Icon, delta, note }) {
+function StatCard({ label, value, icon: Icon, delta, note }: StatCardProps) {
   return (
-    <Card className="!p-4">
-      <div className="flex items-start justify-between gap-2">
-        <p className="text-sm text-slate-600">{label}</p>
-        <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-teal-50 text-teal-700">
-          <Icon className="size-4" />
-        </span>
-      </div>
-      <p className="mt-3 text-2xl font-bold tracking-tight text-slate-900 sm:text-[28px]">
-        {value}
-      </p>
-      <p className="mt-1 text-xs text-slate-400">
-        <span className="font-semibold text-emerald-600">{delta}</span> {note}
-      </p>
-    </Card>
+    <S.Card $compact>
+      <S.StatTop>
+        <S.StatLabel>{label}</S.StatLabel>
+        <S.IconBadge>
+          <Icon />
+        </S.IconBadge>
+      </S.StatTop>
+      <S.StatValue>{value}</S.StatValue>
+      <S.StatNote>
+        <S.StatDelta>{delta}</S.StatDelta> {note}
+      </S.StatNote>
+    </S.Card>
   );
 }
 
@@ -175,154 +180,113 @@ function StatCard({ label, value, icon: Icon, delta, note }) {
 
 function LiveOrders() {
   return (
-    <Card>
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <h2 className="text-sm font-semibold text-slate-900">Live Orders</h2>
-          <span className="inline-flex items-center gap-1 rounded bg-red-50 px-1.5 py-0.5 text-[10px] font-semibold text-red-500">
-            <span className="size-1.5 rounded-full bg-red-500" />
+    <S.Card>
+      <S.RowBetween>
+        <S.TitleGroup>
+          <S.SectionTitle>Live Orders</S.SectionTitle>
+          <S.LiveBadge>
+            <S.LiveDot />
             LIVE
-          </span>
-        </div>
-        <a
-          href="#"
-          className="text-sm font-medium text-teal-700 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600"
-        >
-          View monitor
-        </a>
-      </div>
+          </S.LiveBadge>
+        </S.TitleGroup>
+        <S.ViewLink href="#">View monitor</S.ViewLink>
+      </S.RowBetween>
 
-      <ul className="mt-4 space-y-2.5">
-        {orders.map((order) => {
-          const status = statusStyles[order.status];
-          return (
-            <li
-              key={order.id}
-              className="flex items-center justify-between gap-3 rounded-lg bg-slate-50 px-4 py-3"
-            >
-              <div className="min-w-0">
-                <p className="text-sm font-semibold text-slate-900">
-                  {order.id}
-                </p>
-                <p className="truncate text-xs text-slate-500">{order.items}</p>
-              </div>
-              <div className="flex shrink-0 flex-col items-end gap-1.5 sm:flex-row sm:items-center sm:gap-3">
-                <span className="text-xs text-slate-400">{order.time}</span>
-                <span
-                  className={`rounded px-2 py-0.5 text-[10px] font-semibold ${status.className}`}
-                >
-                  {status.label}
-                </span>
-              </div>
-            </li>
-          );
-        })}
-      </ul>
-    </Card>
+      <S.List $gap="0.625rem">
+        {orders.map((order) => (
+          <S.OrderItem key={order.id}>
+            <S.OrderInfo>
+              <S.OrderId>{order.id}</S.OrderId>
+              <S.OrderDescription>{order.items}</S.OrderDescription>
+            </S.OrderInfo>
+            <S.OrderMeta>
+              <S.OrderTime>{order.time}</S.OrderTime>
+              <S.StatusBadge $status={order.status}>
+                {statusLabels[order.status]}
+              </S.StatusBadge>
+            </S.OrderMeta>
+          </S.OrderItem>
+        ))}
+      </S.List>
+    </S.Card>
   );
 }
 
 function SalesPerformance() {
-  const [range, setRange] = useState("Week");
+  const [range, setRange] = useState<Range>("Week");
 
   return (
-    <Card>
-      <div className="flex items-center justify-between gap-3">
-        <h2 className="text-sm font-semibold text-slate-900">
-          Sales Performance
-        </h2>
+    <S.Card>
+      <S.RowBetween $gap="0.75rem">
+        <S.SectionTitle>Sales Performance</S.SectionTitle>
 
-        <div className="inline-flex rounded-lg border border-slate-200 bg-white p-0.5 text-xs">
-          {Object.keys(salesData).map((key) => (
-            <button
+        <S.RangeToggle>
+          {ranges.map((key) => (
+            <S.RangeButton
               key={key}
               type="button"
+              $active={range === key}
               aria-pressed={range === key}
               onClick={() => setRange(key)}
-              className={`rounded-md px-3 py-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 ${
-                range === key
-                  ? "bg-slate-100 font-semibold text-slate-900"
-                  : "text-slate-500 hover:text-slate-900"
-              }`}
             >
               {key}
-            </button>
+            </S.RangeButton>
           ))}
-        </div>
-      </div>
+        </S.RangeToggle>
+      </S.RowBetween>
 
-      <div className="mt-6 flex h-48 gap-3 px-2 sm:gap-5 sm:px-6">
+      <S.Chart>
         {salesData[range].map(({ label, value, highlight }) => (
-          <div key={label} className="flex flex-1 flex-col">
-            <div className="flex flex-1 items-end">
-              <div
-                style={{ height: `${value}%` }}
-                className={`w-full rounded-t-md transition-all duration-300 ${
-                  highlight ? "bg-orange-500" : "bg-orange-100"
-                }`}
-              />
-            </div>
-            <span
-              className={`mt-2 text-center text-xs ${
-                highlight ? "font-semibold text-slate-900" : "text-slate-500"
-              }`}
-            >
-              {label}
-            </span>
-          </div>
+          <S.BarColumn key={label}>
+            <S.BarTrack>
+              <S.Bar $highlight={highlight} style={{ height: `${value}%` }} />
+            </S.BarTrack>
+            <S.BarLabel $highlight={highlight}>{label}</S.BarLabel>
+          </S.BarColumn>
         ))}
-      </div>
-    </Card>
+      </S.Chart>
+    </S.Card>
   );
 }
 
 function TopSelling() {
   return (
-    <Card>
-      <h2 className="text-sm font-semibold text-slate-900">
-        Top Selling Items
-      </h2>
-      <ul className="mt-4 space-y-4">
+    <S.Card>
+      <S.SectionTitle>Top Selling Items</S.SectionTitle>
+      <S.List $gap="1rem">
         {topItems.map((item) => (
-          <li key={item.name} className="flex items-center gap-3">
-            <div
-              className={`grid size-12 shrink-0 place-items-center rounded-lg text-2xl ${item.bg}`}
-              aria-hidden="true"
-            >
+          <S.TopItem key={item.name}>
+            <S.Thumb $bg={item.bg} aria-hidden="true">
               {item.emoji}
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-xs font-semibold text-slate-900">
-                {item.name}
-              </p>
-              <p className="text-xs text-slate-400">{item.sold} sold</p>
-            </div>
-            <p className="shrink-0 text-xs font-semibold text-teal-700">
-              {item.revenue}
-            </p>
-          </li>
+            </S.Thumb>
+            <S.TopItemInfo>
+              <S.TopItemName>{item.name}</S.TopItemName>
+              <S.TopItemSold>{item.sold} sold</S.TopItemSold>
+            </S.TopItemInfo>
+            <S.TopItemRevenue>{item.revenue}</S.TopItemRevenue>
+          </S.TopItem>
         ))}
-      </ul>
-    </Card>
+      </S.List>
+    </S.Card>
   );
 }
 
 function ActivityFeed() {
   return (
-    <Card>
-      <h2 className="text-sm font-semibold text-slate-900">Activity Feed</h2>
-      <ul className="mt-4 space-y-4">
+    <S.Card>
+      <S.SectionTitle>Activity Feed</S.SectionTitle>
+      <S.List $gap="1rem">
         {activity.map((entry) => (
-          <li key={entry.text} className="flex gap-3">
-            <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-teal-600" />
+          <S.ActivityItem key={entry.text}>
+            <S.ActivityDot />
             <div>
-              <p className="text-xs text-slate-800">{entry.text}</p>
-              <p className="mt-0.5 text-[11px] text-slate-400">{entry.time}</p>
+              <S.ActivityText>{entry.text}</S.ActivityText>
+              <S.ActivityTime>{entry.time}</S.ActivityTime>
             </div>
-          </li>
+          </S.ActivityItem>
         ))}
-      </ul>
-    </Card>
+      </S.List>
+    </S.Card>
   );
 }
 
@@ -337,58 +301,52 @@ export default function Dashboard() {
 
     window.location.reload();
   };
+
   return (
-    <div className="flex min-h-screen bg-slate-50 font-sans text-slate-900">
+    <S.Root>
       <Sidebar />
 
-      <div className="min-w-0 flex-1">
-        <header className="flex items-center border-b border-slate-200 bg-white px-4 py-3 lg:hidden">
-         <Logo />
-        </header>
+      <S.ContentColumn>
+        <S.MobileHeader>
+          <Logo />
+        </S.MobileHeader>
 
-        <main className="p-4 sm:p-6 lg:p-8">
+        <S.Main>
           {/* Page header */}
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <S.PageHeader>
             <div>
-              <h1 className="text-xl font-bold tracking-tight text-slate-900">
-                Aayubowan, Amila!
-              </h1>
-              <p className="mt-1 text-sm text-slate-500">
+              <S.Greeting>Aayubowan, Amila!</S.Greeting>
+              <S.Subtext>
                 Here's the performance of The Ceylon Pavilion today.
-              </p>
-              <button
-                onClick={handleLogout}
-                className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-600 focus:ring-offset-2"
-              >
-                Logout
-              </button>
+              </S.Subtext>
+              <S.LogoutButton onClick={handleLogout}>Logout</S.LogoutButton>
             </div>
-            <div className="inline-flex w-fit items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-700">
-              <CalendarDays className="size-4 text-slate-500" />
+            <S.DateBadge>
+              <S.DateIcon />
               Today: Oct 24, 2026
-            </div>
-          </div>
+            </S.DateBadge>
+          </S.PageHeader>
 
           {/* Stat cards */}
-          <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <S.StatGrid>
             {stats.map((stat) => (
               <StatCard key={stat.label} {...stat} />
             ))}
-          </div>
+          </S.StatGrid>
 
           {/* Main grid */}
-          <div className="mt-6 grid gap-6 lg:grid-cols-3">
-            <div className="space-y-6 lg:col-span-2">
+          <S.MainGrid>
+            <S.LeftColumn>
               <LiveOrders />
               <SalesPerformance />
-            </div>
-            <div className="space-y-6">
+            </S.LeftColumn>
+            <S.RightColumn>
               <TopSelling />
               <ActivityFeed />
-            </div>
-          </div>
-        </main>
-      </div>
-    </div>
+            </S.RightColumn>
+          </S.MainGrid>
+        </S.Main>
+      </S.ContentColumn>
+    </S.Root>
   );
 }
